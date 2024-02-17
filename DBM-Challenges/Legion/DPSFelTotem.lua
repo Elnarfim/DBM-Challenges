@@ -5,11 +5,12 @@ mod.statTypes = "normal,timewalker"
 
 mod:SetRevision("@file-date-integer@")
 mod:SetCreatureID(117230, 117484)--Tugar, Jormog
-mod:SetZone()--Healer (1710), Tank (1698), DPS (1703-The God-Queen's Fury), DPS (Fel Totem Fall)
 mod:SetBossHPInfoToHighest()
 mod.soloChallenge = true
 
 mod:RegisterCombat("combat")
+mod:SetReCombatTime(20, 5)--Basically killing of recombat restriction. mage tower lets you spam retry, we want the mod to let you
+
 mod:RegisterEventsInCombat(
 	"SPELL_CAST_START 241687 242496 242733",
 	"SPELL_AURA_REMOVED 238471",

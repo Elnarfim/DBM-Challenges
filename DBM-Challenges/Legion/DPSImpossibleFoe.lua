@@ -5,10 +5,11 @@ mod.statTypes = "normal,timewalker"
 
 mod:SetRevision("@file-date-integer@")
 mod:SetCreatureID(115638)
-mod:SetZone()--Healer (1710), Tank (1698), DPS (1703-The God-Queen's Fury), DPS (Fel Totem Fall)
 mod.soloChallenge = true
 
 mod:RegisterCombat("combat")
+mod:SetReCombatTime(20, 5)--Basically killing of recombat restriction. mage tower lets you spam retry, we want the mod to let you
+
 mod:RegisterEventsInCombat(
 	"SPELL_AURA_APPLIED 243113",
 	"SPELL_AURA_REMOVED 243113",
@@ -26,7 +27,7 @@ local specWarnDarkFuryKick		= mod:NewSpecialWarningInterrupt(243111, nil, nil, n
 local timerImpServantsCD		= mod:NewCDTimer(45, 235140, nil, nil, nil, 1)
 local timerDarkFuryCD			= mod:NewCDTimer(51.1, 243111, nil, nil, nil, 5, nil, nil, nil, 1, 4)
 
-mod:AddInfoFrameOption(243113, true)
+mod:AddInfoFrameOption(243111, true)
 
 mod.vb.phase = 1
 
