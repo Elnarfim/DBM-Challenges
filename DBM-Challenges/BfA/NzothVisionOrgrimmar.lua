@@ -3,11 +3,11 @@ local L		= mod:GetLocalizedStrings()
 
 mod:SetRevision("@file-date-integer@")
 
-mod:RegisterCombat("scenario", 2212)--2212, 2213 (org, stormwind)
+mod:RegisterCombat("scenario", 2212, 2828)
 
 mod:RegisterEventsInCombat(
-	"SPELL_CAST_START 297822 297746 304976 297574 304251 306726 299110 307863 300351 300388 304101 304282 306001 306199 303589 305875 306828 306617 300388 296537 305378 298630 298033 305236 304169 298502 297315",
-	"SPELL_AURA_APPLIED 311390 315385 316481 311641 299055 304165",
+	"SPELL_CAST_START 297822 297746 304976 297574 304251 306726 299110 307863 300351 300388 304101 304282 306001 306199 303589 305875 306828 306617 300388 296537 305378 298630 298033 305236 304169 298502 297315 307870",
+	"SPELL_AURA_APPLIED 311390 315385 311641 299055 304165",--316481
 	"SPELL_AURA_APPLIED_DOSE 311390",
 	"SPELL_AURA_REMOVED 298033",
 	"SPELL_CAST_SUCCESS 297237 305378",
@@ -20,12 +20,16 @@ mod:RegisterEventsInCombat(
 	"UNIT_SPELLCAST_INTERRUPTED_UNFILTERED",
 	"UNIT_AURA player",
 	"NAME_PLATE_UNIT_ADDED",
-	"FORBIDDEN_NAME_PLATE_UNIT_ADDED"
+	"FORBIDDEN_NAME_PLATE_UNIT_ADDED",
+	"GOSSIP_SHOW",
+	"UNIT_POWER_UPDATE player"
 )
 
 --TODO, maybe add https://ptr.wowhead.com/spell=298510/aqiri-mind-toxin
 --TODO, improve https://ptr.wowhead.com/spell=306001/explosive-leap warning if can get throw target
 --TODO, can https://ptr.wowhead.com/spell=305875/visceral-fluid be dodged? If so upgrade the warning
+local warnSanity					= mod:NewCountAnnounce(307831, 3)
+local warnSanityOrb					= mod:NewCastAnnounce(307870, 1)
 local warnGiftoftheTitans			= mod:NewSpellAnnounce(313698, 1)
 local warnScorchedFeet				= mod:NewSpellAnnounce(315385, 4)
 --Extra Abilities (used by main boss and the area LTs)
@@ -40,24 +44,25 @@ local warnTouchoftheAbyss			= mod:NewCastAnnounce(298033, 4)
 local warnToxicBreath				= mod:NewSpellAnnounce(298502, 2)
 
 --General (GTFOs and Affixes)
+local specwarnSanity				= mod:NewSpecialWarningCount(307831, nil, nil, nil, 1, 10)
 local specWarnGTFO					= mod:NewSpecialWarningGTFO(303594, nil, nil, nil, 1, 8)
 local specWarnEntomophobia			= mod:NewSpecialWarningJump(311389, nil, nil, nil, 1, 6)
 local specWarnHauntingShadows		= mod:NewSpecialWarningDodge(306545, false, nil, 4, 1, 2)
 local specWarnScorchedFeet			= mod:NewSpecialWarningYou(315385, false, nil, 2, 1, 2)
 local yellScorchedFeet				= mod:NewYell(315385)
-local specWarnSplitPersonality		= mod:NewSpecialWarningYou(316481, nil, nil, nil, 1, 2)
+--local specWarnSplitPersonality		= mod:NewSpecialWarningYou(316481, nil, nil, nil, 1, 2)
 local specWarnWaveringWill			= mod:NewSpecialWarningReflect(311641, "false", nil, nil, 1, 2)--Off by default, it's only 5%, but that might matter to some classes
 --Thrall
 local specWarnSurgingDarkness		= mod:NewSpecialWarningDodge(297822, nil, nil, nil, 2, 2)
-local specWarnSeismicSlam			= mod:NewSpecialWarningDodge(297746, nil, nil, nil, 2, 2)
+local specWarnSeismicSlam			= mod:NewSpecialWarningDodge(297746, nil, nil, nil, 2, 15)
 local yellSeismicSlam				= mod:NewYell(297746)
 local yellDefiledGround				= mod:NewYell(306726)
 --Extra Abilities (used by Thrall and the area LTs)
 local specWarnHopelessness			= mod:NewSpecialWarningMoveTo(297574, nil, nil, nil, 1, 2)
-local specWarnDefiledGround			= mod:NewSpecialWarningDodge(306726, nil, nil, nil, 2, 2)--Can this be dodged?
+local specWarnDefiledGround			= mod:NewSpecialWarningDodge(306726, nil, nil, nil, 2, 15)
 --Other notable abilities by mini bosses/trash
 local specWarnOrbofAnnihilation		= mod:NewSpecialWarningDodge(299110, nil, nil, nil, 2, 2)
-local specWarnDarkForce				= mod:NewSpecialWarningYou(299055, nil, nil, nil, 1, 2)
+local specWarnDarkForce				= mod:NewSpecialWarningYou(299055, nil, nil, nil, 1, 13)
 local specWarnVoidTorrent			= mod:NewSpecialWarningYou(307863, nil, nil, nil, 4, 2)
 local yellVoidTorrent				= mod:NewYell(307863)
 local specWarnSurgingFist			= mod:NewSpecialWarningDodge(300351, nil, nil, nil, 2, 2)
@@ -75,35 +80,37 @@ local specWarnMentalAssault			= mod:NewSpecialWarningInterrupt(296537, "HasInter
 local specWarnTouchoftheAbyss		= mod:NewSpecialWarningInterrupt(298033, "HasInterrupt", nil, nil, 1, 2)
 local specWarnVenomBolt				= mod:NewSpecialWarningInterrupt(305236, "HasInterrupt", nil, nil, 1, 2)
 local specWarnVoidBuffet			= mod:NewSpecialWarningInterrupt(297315, "HasInterrupt", nil, nil, 1, 2)
-local specWarnShockwave				= mod:NewSpecialWarningDodge(298630, nil, nil, nil, 2, 2)
+local specWarnShockwave				= mod:NewSpecialWarningDodge(298630, nil, nil, nil, 2, 15)
 local specWarnVisceralFluid			= mod:NewSpecialWarningDodge(305875, nil, nil, nil, 2, 2)
 local specWarnToxicVolley			= mod:NewSpecialWarningDodge(304169, nil, nil, nil, 2, 2)
 
 --General
-local timerGiftoftheTitan		= mod:NewBuffFadesTimer(20, 313698, nil, nil, nil, 5)
+local timerGiftoftheTitan			= mod:NewBuffFadesTimer(20, 313698, nil, nil, nil, 5)
 --Affixes/Masks
-local timerDarkImaginationCD	= mod:NewCDTimer(60, 315976, nil, nil, nil, 1, 296733)
+local timerDarkImaginationCD		= mod:NewCDTimer(60, 315976, nil, nil, nil, 1, 296733)
 --Thrall
-local timerSurgingDarknessCD	= mod:NewCDTimer(20.6, 297822, nil, nil, nil, 3)
-local timerSeismicSlamCD		= mod:NewCDTimer(12.1, 297746, nil, nil, nil, 3)
+local timerSurgingDarknessCD		= mod:NewCDTimer(20.6, 297822, nil, nil, nil, 3)
+local timerSeismicSlamCD			= mod:NewCDTimer(12.1, 297746, nil, nil, nil, 3)
 --Extra Abilities (used by Thrall and the area LTs)
-local timerDefiledGroundCD		= mod:NewCDTimer(12.1, 306726, nil, nil, nil, 3)
+local timerDefiledGroundCD			= mod:NewCDTimer(12.1, 306726, nil, nil, nil, 3)
 --Other notable elite timers
-local timerSurgingFistCD		= mod:NewCDTimer(9.7, 300351, nil, nil, nil, 3)
-local timerDecimatorCD			= mod:NewCDTimer(9.7, 300412, nil, nil, nil, 3)
-local timerToxicBreathCD		= mod:NewCDTimer(7.3, 298502, nil, nil, nil, 3)
-local timerToxicVolleyCD		= mod:NewCDTimer(7.3, 304169, nil, nil, nil, 3)
+local timerSurgingFistCD			= mod:NewCDTimer(9.7, 300351, nil, nil, nil, 3)
+local timerDecimatorCD				= mod:NewCDTimer(9.7, 300412, nil, nil, nil, 3)
+local timerToxicBreathCD			= mod:NewCDTimer(7.3, 298502, nil, nil, nil, 3)
+local timerToxicVolleyCD			= mod:NewCDTimer(7.3, 304169, nil, nil, nil, 3)
 
 mod:AddInfoFrameOption(307831, true)
 mod:AddNamePlateOption("NPAuraOnHaunting2", 306545, false)
 mod:AddNamePlateOption("NPAuraOnAbyss", 298033)
 mod:AddNamePlateOption("NPAuraOnHorrifyingShout", 305378)
+mod:AddGossipOption(true, "Action")
 
 --AntiSpam Throttles: 1-Unique ability, 2-watch steps, 3-shockwaves, 4-GTFOs
 local playerName = UnitName("player")
 mod.vb.GnshalCleared = false
 mod.vb.VezokkCleared = false
 local warnedGUIDs = {}
+local lastSanity = 500
 
 --If you have potions when run ends, the debuffs throw you in combat for about 6 seconds after run has ended
 local function DelayedNameplateFix(self, once)
@@ -155,6 +162,7 @@ function mod:OnCombatStart(delay)
 	self.vb.GnshalCleared = false
 	self.vb.VezokkCleared = false
 	table.wipe(warnedGUIDs)
+	lastSanity = 500
 	DelayedNameplateFix(self, true)--Repair settings from previous session if they didn't get repaired in last session
 	if self.Options.SpecWarn306545dodge4 then
 		--This warning requires friendly nameplates, because it's only way to detect it.
@@ -206,7 +214,7 @@ function mod:SPELL_CAST_START(args)
 	elseif spellId == 297746 then
 		if self:AntiSpam(3, 3) then
 			specWarnSeismicSlam:Show()
-			specWarnSeismicSlam:Play("shockwave")
+			specWarnSeismicSlam:Play("frontal")
 		end
 		timerSeismicSlamCD:Start()
 		if GetNumGroupMembers() > 1 then
@@ -217,13 +225,13 @@ function mod:SPELL_CAST_START(args)
 		--timerCriesoftheVoidCD:Start()
 	elseif spellId == 297574 then
 		specWarnHopelessness:Show(DBM_COMMON_L.ORB)
-		specWarnHopelessness:Play("orbrun")--Technically not quite accurate but closest match to "find orb"
+		specWarnHopelessness:Play("movetoyelloworb")
 	elseif spellId == 304251 and self:AntiSpam(3.5, 1) then--1-4 boars, 3.5 second throttle
 		warnVoidQuills:Show()
 	elseif spellId == 306726 or spellId == 306828 then
 		if self:AntiSpam(3, 3) then
 			specWarnDefiledGround:Show()
-			specWarnDefiledGround:Play("shockwave")
+			specWarnDefiledGround:Play("frontal")
 		end
 		timerDefiledGroundCD:Start()
 		if GetNumGroupMembers() > 1 then
@@ -295,7 +303,7 @@ function mod:SPELL_CAST_START(args)
 		end
 	elseif spellId == 298630 and self:AntiSpam(3, 3) then
 		specWarnShockwave:Show()
-		specWarnShockwave:Play("shockwave")
+		specWarnShockwave:Play("frontal")
 	elseif spellId == 304169 then
 		if self:AntiSpam(2, 2) then
 			specWarnToxicVolley:Show()
@@ -313,6 +321,8 @@ function mod:SPELL_CAST_START(args)
 	elseif spellId == 297315 and self:CheckInterruptFilter(args.sourceGUID, false, true) then
 		specWarnVoidBuffet:Show(args.sourceName)
 		specWarnVoidBuffet:Play("kickcast")
+	elseif spellId == 307870 then
+		warnSanityOrb:Show()
 	end
 end
 
@@ -345,9 +355,9 @@ function mod:SPELL_AURA_APPLIED(args)
 		if GetNumGroupMembers() > 1 then--Warn allies if in scenario with others
 			yellScorchedFeet:Yell()
 		end
-	elseif spellId == 316481 and args:IsPlayer() then
-		specWarnSplitPersonality:Show()
-		specWarnSplitPersonality:Play("targetyou")
+--	elseif spellId == 316481 and args:IsPlayer() then
+--		specWarnSplitPersonality:Show()
+--		specWarnSplitPersonality:Play("stopmove")
 	elseif spellId == 311641 and args:IsPlayer() then
 		specWarnWaveringWill:Show(playerName)
 		specWarnWaveringWill:Play("stopattack")
@@ -365,7 +375,7 @@ function mod:SPELL_AURA_APPLIED(args)
 	elseif spellId == 299055 then
 		if args:IsPlayer() then
 			specWarnDarkForce:Show()
-			specWarnDarkForce:Play("targetyou")
+			specWarnDarkForce:Play("pushbackincoming")
 		else
 			warnDarkForce:Show(args.destName)
 		end
@@ -404,26 +414,26 @@ end
 
 function mod:UNIT_DIED(args)
 	local cid = self:GetCIDFromGUID(args.destGUID)
-	if cid == 152089 then--Thrall
+	if cid == 152089 or cid == 234034 then--Thrall
 		timerSurgingDarknessCD:Stop()
 		timerSeismicSlamCD:Stop()
 		--timerCriesoftheVoidCD:Stop()
 		timerDefiledGroundCD:Stop()
 		DBM:EndCombat(self)
-	elseif cid == 156161 then--Inquisitor Gnshal
+	elseif cid == 156161 or cid == 234035 then--Inquisitor Gnshal
 		--timerCriesoftheVoidCD:Stop()
 		self.vb.GnshalCleared = true
-	elseif cid == 152874 then--Vez'okk the Lightless
+	elseif cid == 152874 or cid == 234037 then--Vez'okk the Lightless
 		timerDefiledGroundCD:Stop()
 		self.vb.VezokkCleared = true
-	elseif cid == 153943 then
+	elseif cid == 153943 then--Decimator Shiq'voth (unknown TWW variant ID)
 		timerSurgingFistCD:Stop()
 		timerDecimatorCD:Stop()
-	elseif cid == 153401 then--K'thir Dominator
+	elseif cid == 153401 or cid == 244186 then--K'thir Dominator
 		if self.Options.NPAuraOnAbyss then
 			DBM.Nameplate:Hide(true, args.destGUID, 298033)
 		end
-	elseif cid == 153532 then--Big Bug Guy
+	elseif cid == 153532 then--Aqir Mindhunter (Unknown TWW variant ID)
 		timerToxicVolleyCD:Stop()
 		timerToxicBreathCD:Stop()
 	end
@@ -431,14 +441,14 @@ end
 
 function mod:ENCOUNTER_START(encounterID)
 	if not self:IsInCombat() then return end
-	if encounterID == 2332 then--Thrall
+	if encounterID == 2332 or encounterID == 3086 then--Thrall
 		timerSurgingDarknessCD:Start(11.1)
 		if self.vb.VezokkCleared then
 			timerDefiledGroundCD:Start(1)
 		else
 			timerSeismicSlamCD:Start(4.6)
 		end
-	elseif encounterID == 2373 then--Vezokk
+	elseif encounterID == 2373 or encounterID == 3089 then--Vezokk
 		timerDefiledGroundCD:Start(3.4)
 	end
 end
@@ -498,6 +508,43 @@ function mod:NAME_PLATE_UNIT_ADDED(unit)
 	end
 end
 mod.FORBIDDEN_NAME_PLATE_UNIT_ADDED = mod.NAME_PLATE_UNIT_ADDED--Just in case blizzard fixes map restrictions
+
+function mod:GOSSIP_SHOW()
+	local gossipOptionID = self:GetGossipID()
+	if gossipOptionID then
+		--Garona
+		if self.Options.AutoGossipAction and gossipOptionID == 152993 then
+			self:SelectGossip(gossipOptionID)
+		end
+	end
+end
+
+function mod:UNIT_POWER_UPDATE(uId)
+	local currentSanity = UnitPower(uId, ALTERNATE_POWER_INDEX)
+	if currentSanity > lastSanity then
+		lastSanity = currentSanity
+		return
+	end
+	if self:AntiSpam(5, 6) then--Additional throttle in case you lose sanity VERY rapidly with increased ICD for special warning
+		if currentSanity == 40 and lastSanity > 40 then
+			lastSanity = 40
+			specwarnSanity:Show(lastSanity)
+			specwarnSanity:Play("lowsanity")
+		elseif currentSanity == 80 and lastSanity > 80 then
+			lastSanity = 80
+			specwarnSanity:Show(lastSanity)
+			specwarnSanity:Play("lowsanity")
+		end
+	elseif self:AntiSpam(3, 7) then--Additional throttle in case you lose sanity VERY rapidly
+		if currentSanity == 120 and lastSanity > 120 then
+			lastSanity = 120
+			warnSanity:Show(lastSanity)
+		elseif currentSanity == 160 and lastSanity > 160 then
+			lastSanity = 160
+			warnSanity:Show(lastSanity)
+		end
+	end
+end
 
 function mod:OnSync(msg)
 	if not self:IsInCombat() then return end
